@@ -1,0 +1,13 @@
+{
+  "id": "pine",
+  "name": "松树",
+  "tile": "tree",
+  "pixels": [
+    "..GG..",
+    ".GGGG.",
+    "GGGGGG",
+    ".GGGG.",
+    "..BB..",
+    "..BB.."
+  ]
+}

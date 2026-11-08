@@ -1,0 +1,13 @@
+{
+  "id": "fire",
+  "title": "市区大火",
+  "desc": "A区一栋住宅突发大火，居民要求市长立刻处理。",
+  "portrait": "assets/chars/mayor.png",
+  "condition": { "min_day": 3, "min_pop": 10 },
+  "probability": 30,
+  "choices": [
+    { "text": "出钱灭火",      "money": -500, "pop": 0,   "result": "火灾被迅速扑灭，市民松了口气。" },
+    { "text": "号召市民自救",  "money": 0,    "pop": -10, "result": "靠市民自救勉强控制住火势，但有人伤亡。" },
+    { "text": "视而不见",      "money": -100, "pop": -30, "result": "火势蔓延，损失惨重，市长民望大跌。" }
+  ]
+}

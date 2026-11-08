@@ -1,0 +1,8 @@
+{
+  "chapter": "1",
+  "min_day": 1,
+  "steps": [
+    { "event_id": "developer", "delay": 2 },
+    { "event_id": "fire",      "delay": 3 }
+  ]
+}

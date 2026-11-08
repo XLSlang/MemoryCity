@@ -1,0 +1,8 @@
+{
+  "id": "mayor",
+  "name": "张市长",
+  "portrait": "mayor.png",
+  "honesty": 80,
+  "efficiency": 60,
+  "charisma": 50
+}

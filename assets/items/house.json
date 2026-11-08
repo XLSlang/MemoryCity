@@ -1,0 +1,14 @@
+{
+  "id": "cottage",
+  "name": "小屋",
+  "tile": "house",
+  "cost": 80,
+  "pixels": [
+    "..RRRR..",
+    ".RRRRRR.",
+    "RRRRRRRR",
+    ".BBBBBB.",
+    ".BBBBBB.",
+    ".BBBBBB."
+  ]
+}

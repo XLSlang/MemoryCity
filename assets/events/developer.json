@@ -1,0 +1,11 @@
+{
+  "id": "developer",
+  "title": "开发商来访",
+  "desc": "一位开发商愿意出高价买下你的土地，并承诺提供就业岗位。",
+  "condition": { "min_day": 2, "min_pop": 0 },
+  "probability": 20,
+  "choices": [
+    { "text": "接受", "money": 800, "pop": 15, "result": "开发商建起了商场，城市热闹起来。" },
+    { "text": "拒绝", "money": 0,   "pop": 0,  "result": "你礼貌地拒绝了。开发商悻悻离去。" }
+  ]
+}
