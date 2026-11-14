@@ -3,6 +3,7 @@
 
 #include "config.h"
 #include <stdbool.h>
+#include <stdint.h>
 
 typedef enum {
     TILE_GRASS = 0,
@@ -56,5 +57,11 @@ void game_clear_item(void);
 TileType game_tile_from_name(const char *name);
 
 bool game_is_road(int x, int y);
+
+uint32_t game_get_world_seed(void);
+void     game_init_world(uint32_t seed);
+void     game_save_to(const char *path);
+bool     game_load_from(const char *path);
+int      game_count_houses(void);
 
 #endif // GAME_H

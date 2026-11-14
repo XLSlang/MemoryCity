@@ -2,6 +2,8 @@
 #define EVENT_H
 
 #include <stdbool.h>
+#include <stdio.h>
+#include "../json.h"
 
 #define EVENT_MAX_CHOICES 4
 
@@ -32,4 +34,6 @@ void  event_apply_choice(int idx);
 void  event_close(void);
 bool  event_force_trigger(const char *id);
 
+void event_export_state(FILE *f);
+bool event_import_from_json(JsonValue *v);
 #endif

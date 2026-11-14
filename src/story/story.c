@@ -110,3 +110,16 @@ const char* story_current_text(void) {
     if (!g_loaded || g_step_index >= g_story.step_count) return "";
     return g_story.steps[g_step_index].event_id;
 }
+
+void story_export_state(FILE *f) {
+    fprintf(f, "{ \"step\": %d, \"tick\": %d, \"running\": %s }",
+            g_step_index, g_tick_counter, g_running ? "true" : "false");
+}
+
+bool story_import_from_json(JsonValue *v) {
+    if (!v || v->type != JSON_OBJECT) return false;
+    g_step_index   = (int)json_get_number(json_object_get(v, "step"), 0);
+    g_tick_counter = (int)json_get_number(json_object_get(v, "tick"), 0);
+    g_running      = json_get_bool(json_object_get(v, "running"), false);
+    return true;
+}

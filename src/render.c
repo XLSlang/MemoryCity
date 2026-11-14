@@ -2,7 +2,9 @@
 #include "config.h"
 #include "game.h"
 #include "dsl_lua.h"
+#include "map/chunk.h"
 #include <math.h>
+#include <limits.h>
 
 static double get_tw() { return TILE_W * game_get_state()->cam_zoom; }
 static double get_th() { return TILE_H * game_get_state()->cam_zoom; }
@@ -17,17 +19,18 @@ void render_mouse_to_grid(int screen_x, int screen_y, int *mx, int *my, bool *is
     GameState *state = game_get_state();
     double tw = get_tw();
     double th = get_th();
-    
+
     int dx = screen_x - state->cam_offset_x;
     int dy = screen_y - state->cam_offset_y;
-    
+
     double fx = ((double)dx / (tw / 2.0) + (double)dy / (th / 2.0)) / 2.0;
     double fy = ((double)dy / (th / 2.0) - (double)dx / (tw / 2.0)) / 2.0;
     int ix = (int)floor(fx + 0.5);
     int iy = (int)floor(fy + 0.5);
-    
+
     *mx = ix; *my = iy;
-    *is_valid = (ix >= 0 && ix < MAP_W && iy >= 0 && iy < MAP_H);
+    // 无限地图：不再限制 MAP_W/MAP_H，只要坐标在合理范围即有效
+    *is_valid = true;
 }
 
 static void path_diamond(cairo_t *cr, int sx, int sy, double w, double h) {
@@ -41,25 +44,23 @@ static void path_diamond(cairo_t *cr, int sx, int sy, double w, double h) {
 static void draw_ground(cairo_t *cr, int sx, int sy, TileType type, int mx, int my) {
     double tw = get_tw();
     double th = get_th();
-    
+
     path_diamond(cr, sx, sy, tw, th);
     if (type == TILE_GRASS) cairo_set_source_rgb(cr, 0.30, 0.62, 0.28);
     else if (type == TILE_ROAD) cairo_set_source_rgb(cr, 0.35, 0.35, 0.38);
-
     else if (type == TILE_HOUSE) cairo_set_source_rgb(cr, 0.25, 0.25, 0.25);
+    else cairo_set_source_rgb(cr, 0.28, 0.58, 0.26);
 
-    else /* TILE_TREE 等其他建筑 */ cairo_set_source_rgb(cr, 0.28, 0.58, 0.26);  // 其他建筑底下的灰色
-    
     cairo_fill_preserve(cr);
     cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.3);
     cairo_set_line_width(cr, 1.0);
     cairo_stroke(cr);
-    
+
     if (type == TILE_ROAD) {
         cairo_set_source_rgba(cr, 1.0, 1.0, 0.6, 0.8);
         cairo_set_line_width(cr, 1.5 * game_get_state()->cam_zoom);
         cairo_set_dash(cr, (double[]){6.0, 6.0}, 2, 0);
-        
+
         double cx = sx;
         double cy = sy + th / 2.0;
         double hw = tw / 2.0;
@@ -82,13 +83,12 @@ static void draw_ground(cairo_t *cr, int sx, int sy, TileType type, int mx, int 
             cairo_move_to(cr, cx - hw, cy - hh); cairo_line_to(cr, cx + hw, cy + hh);
             cairo_move_to(cr, cx + hw, cy - hh); cairo_line_to(cr, cx - hw, cy + hh);
         }
-        
+
         cairo_stroke(cr);
-        cairo_set_dash(cr, NULL, 0, 0); 
+        cairo_set_dash(cr, NULL, 0, 0);
     }
 }
 
-// 改为接受具体的 id 字符串
 static void draw_building(cairo_t *cr, int sx, int sy, const char *id) {
     if (id && id[0] != '\0') {
         dsl_lua_draw_building(cr, sx, sy, id, game_get_state()->cam_zoom);
@@ -106,21 +106,36 @@ static void on_draw(GtkDrawingArea *area, cairo_t *cr, int width, int height, gp
 
     double clip_pad = 40.0 * state->cam_zoom + th + 20.0;
 
-    for (int sum = 0; sum <= (MAP_W - 1) + (MAP_H - 1); sum++) {
-        for (int mx = 0; mx <= sum; mx++) {
-            int my = sum - mx;
-            if (mx >= MAP_W || my >= MAP_H) continue;
+    // 屏幕四角反算世界坐标，取 bounding box
+    int min_mx = INT_MAX, max_mx = INT_MIN;
+    int min_my = INT_MAX, max_my = INT_MIN;
+    int corners[4][2] = {{0,0},{width,0},{0,height},{width,height}};
+    for (int i = 0; i < 4; i++) {
+        int mx, my; bool valid;
+        render_mouse_to_grid(corners[i][0], corners[i][1], &mx, &my, &valid);
+        if (mx < min_mx) min_mx = mx;
+        if (mx > max_mx) max_mx = mx;
+        if (my < min_my) min_my = my;
+        if (my > max_my) max_my = my;
+    }
 
+    // padding 防止边缘闪烁
+    min_mx -= 2; max_mx += 2;
+    min_my -= 2; max_my += 2;
+
+    for (int my = min_my; my <= max_my; my++) {
+        for (int mx = min_mx; mx <= max_mx; mx++) {
             int sx, sy;
             grid_to_screen(mx, my, &sx, &sy);
-            
+
             if (sx < -tw - clip_pad || sx > width  + tw + clip_pad ||
                 sy < -th - clip_pad || sy > height + th + clip_pad) continue;
 
-            draw_ground(cr, sx, sy, state->grid[my][mx], mx, my);
-            
-            // 传入当前格子具体的 ID
-            draw_building(cr, sx, sy, state->grid_id[my][mx]);
+            int tile = chunk_get_tile(mx, my);
+            const char *id = chunk_get_id(mx, my);
+
+            draw_ground(cr, sx, sy, (TileType)tile, mx, my);
+            draw_building(cr, sx, sy, id);
 
             bool is_hover = state->has_hover && state->hover_x == mx && state->hover_y == my;
             bool is_sel = state->has_selection && state->selected_x == mx && state->selected_y == my;

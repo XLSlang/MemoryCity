@@ -124,9 +124,10 @@ bool event_force_trigger(const char *id) {
     if (g_active) return false;
     for (int i = 0; i < g_count; i++) {
         if (strcmp(g_events[i].id, id) == 0) {
+            if (g_events[i].fired) return false;   // 已触发过，不重复
             g_current = i;
             g_active = true;
-            g_events[i].fired = true;                 // 标记已触发
+            g_events[i].fired = true;
             return true;
         }
     }
@@ -150,4 +151,34 @@ void event_apply_choice(int idx) {
 void event_close(void) {
     g_active = false;
     g_current = -1;
+}
+
+void event_export_state(FILE *f) {
+    fputs("[", f);
+    int first = 1;
+    for (int i = 0; i < g_count; i++) {
+        if (!g_events[i].fired) continue;
+        if (!first) fputc(',', f);
+        first = 0;
+        fputc('"', f);
+        fputs(g_events[i].id, f);
+        fputc('"', f);
+    }
+    fputs("]", f);
+}
+
+bool event_import_from_json(JsonValue *v) {
+    if (!v || v->type != JSON_ARRAY) return false;
+    int n = json_array_size(v);
+    for (int i = 0; i < n; i++) {
+        const char *id = json_get_string(json_array_get(v, i), "");
+        if (!id[0]) continue;
+        for (int j = 0; j < g_count; j++) {
+            if (strcmp(g_events[j].id, id) == 0) {
+                g_events[j].fired = true;
+                break;
+            }
+        }
+    }
+    return true;
 }
